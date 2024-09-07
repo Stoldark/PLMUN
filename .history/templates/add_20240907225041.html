@@ -1,0 +1,16 @@
+# Route to add an item
+@app.route('/add', methods=('GET', 'POST'))
+def add_item():
+    if request.method == 'POST':
+        name = request.form['name']
+        quantity = request.form['quantity']
+        price = request.form['price']
+
+        conn = get_db_connection()
+        conn.execute('INSERT INTO items (name, quantity, price) VALUES (?, ?, ?)', (name, quantity, price))
+        conn.commit()
+        conn.close()
+
+        return redirect('/')
+
+    return render_template('add.html', form_action='add_item', title='Add New Item', button_text='Add Item')
