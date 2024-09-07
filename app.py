@@ -34,7 +34,6 @@ def add_item():
         return redirect('/')
     return render_template('add.html')
 
-
 # Route to edit an item
 @app.route('/edit/<int:id>', methods=('GET', 'POST'))
 def edit_item(id):
@@ -64,4 +63,4 @@ def delete_item(id):
     return redirect('/')
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=10000, debug=True)
