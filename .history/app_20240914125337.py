@@ -22,9 +22,10 @@ def get_db_connection():
 
 # User model
 class User(UserMixin):
-    def __init__(self, id, username, role):
+    def __init__(self, id, username, password, role):
         self.id = id
         self.username = username
+        self.password = password
         self.role = role
 
 @login_manager.user_loader
@@ -33,7 +34,7 @@ def load_user(user_id):
     user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
     conn.close()
     if user:
-        return User(user['id'], user['username'], user['role'])
+        return User(user['id'], user['username'], user['password'], user['role'])
     return None
 
 # Registration form
@@ -138,15 +139,14 @@ def login():
         conn.close()
 
         if user and bcrypt.check_password_hash(user['password'], password):
-            login_user(User(user['id'], user['username'], user['role']))
-            return redirect('/')
-        else:
-            flash('Login Unsuccessful. Please check your username and password', 'danger')
-    
+            user_obj = User(user['id'], user['username'], user['password'], user['role'])
+            login_user(user_obj)
+            return redirect(url_for('index'))
+        flash('Login unsuccessful. Please check your username and password.')
     return render_template('login.html', form=form)
 
 # Logout route
-@app.route('/logout', methods=['POST'])
+@app.route('/logout')
 @login_required
 def logout():
     logout_user()

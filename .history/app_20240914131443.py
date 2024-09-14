@@ -146,11 +146,13 @@ def login():
     return render_template('login.html', form=form)
 
 # Logout route
-@app.route('/logout', methods=['POST'])
+@app.route('/logout')
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('index'))
+    flash('You have been logged out successfully.', 'info')
+    return redirect(url_for('login'))
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))  # Use PORT environment variable or default to 10000

@@ -121,7 +121,7 @@ def register():
         conn.commit()
         conn.close()
 
-        flash('Registration successful! You can now log in.')
+        flash('Registration successful! You can now log in.', 'success')
         return redirect(url_for('login'))
     return render_template('register.html', form=form)
 
@@ -139,18 +139,20 @@ def login():
 
         if user and bcrypt.check_password_hash(user['password'], password):
             login_user(User(user['id'], user['username'], user['role']))
+            flash('Login successful!', 'success')
             return redirect('/')
         else:
-            flash('Login Unsuccessful. Please check your username and password', 'danger')
+            flash('Login Unsuccessful. Please check your username and password.', 'danger')
     
     return render_template('login.html', form=form)
 
 # Logout route
-@app.route('/logout', methods=['POST'])
+@app.route('/logout')
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('index'))
+    flash('You have been logged out successfully.', 'info')
+    return redirect(url_for('login'))
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))  # Use PORT environment variable or default to 10000

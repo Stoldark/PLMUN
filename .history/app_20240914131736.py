@@ -146,7 +146,7 @@ def login():
     return render_template('login.html', form=form)
 
 # Logout route
-@app.route('/logout', methods=['POST'])
+@app.route('/logout')
 @login_required
 def logout():
     logout_user()
