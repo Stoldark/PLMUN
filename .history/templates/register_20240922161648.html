@@ -7,19 +7,23 @@
 </head>
 <body>
     <h1>Register</h1>
-    <form method="post">
+
+    <form method="POST" action="{{ url_for('register') }}">
         {{ form.hidden_tag() }}
+
         <label for="username">Username:</label>
-        {{ form.username(size=32) }}<br>
+        <input type="text" id="username" name="username" value="{{ form.username.data }}">
+        <br>
 
         <label for="password">Password:</label>
-        {{ form.password(size=32) }}<br>
+        <input type="password" id="password" name="password">
+        <br>
 
         <label for="role">Role:</label>
-        {{ form.role(size=32) }}<br>
+        <input type="text" id="role" name="role" value="{{ form.role.data }}">
+        <br>
 
-        <button type="submit">Register</button>
+        <input type="submit" value="Register">
     </form>
-    <a href="{{ url_for('login') }}">Login</a>
 </body>
 </html>

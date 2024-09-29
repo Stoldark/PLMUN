@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash, jsonify
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired, Length
+from wtforms import StringField, PasswordField, SubmitField, DecimalField, IntegerField
+from wtforms.validators import DataRequired, Length, NumberRange
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 import sqlite3
@@ -41,6 +41,13 @@ def load_user(user_id):
         return User(user['id'], user['username'], user['role'])
     return None
 
+# Form for adding inventory items
+class AddItemForm(FlaskForm):
+    name = StringField('Item Name', validators=[DataRequired(), Length(min=1, max=100)])
+    quantity = IntegerField('Quantity', validators=[DataRequired(), NumberRange(min=1)])
+    price = DecimalField('Price', validators=[DataRequired()])
+    submit = SubmitField('Add Item')
+
 # Registration form
 class RegistrationForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=4, max=25)])
@@ -55,22 +62,14 @@ class LoginForm(FlaskForm):
     submit = SubmitField('Login')
 
 # Route to show inventory items
-@app.route('/')
-@login_required
-def index():
-    conn = get_db_connection()
-    items = conn.execute('SELECT * FROM items').fetchall()
-    conn.close()
-    return render_template('index.html', items=items)
-
-# Route to add an item
 @app.route('/add', methods=('GET', 'POST'))
 @login_required
 def add_item():
-    if request.method == 'POST':
-        name = request.form['name']
-        quantity = request.form['quantity']
-        price = request.form['price']
+    form = AddItemForm()
+    if form.validate_on_submit():
+        name = form.name.data
+        quantity = form.quantity.data
+        price = float(form.price.data)  # Convert Decimal to float
 
         conn = get_db_connection()
         conn.execute('INSERT INTO items (name, quantity, price) VALUES (?, ?, ?)',
@@ -79,7 +78,8 @@ def add_item():
         conn.close()
 
         return redirect('/')
-    return render_template('add.html')
+    return render_template('add.html', form=form)
+
 
 # Route to edit an item
 @app.route('/edit/<int:id>', methods=('GET', 'POST'))
@@ -144,10 +144,12 @@ def login():
 
         if user and bcrypt.check_password_hash(user['password'], password):
             login_user(User(user['id'], user['username'], user['role']))
-            return redirect('/')
+            flash('Login successful!')  # Flash message for successful login
+            return redirect(url_for('index'))  # Redirect to the homepage
         else:
-            flash('Login Unsuccessful. Please check your username and password', 'danger')
-    
+            flash('Invalid username or password')  # Flash message for invalid login
+            return render_template('login.html', form=form), 401  # Show login form again with an error
+
     return render_template('login.html', form=form)
 
 # Logout route

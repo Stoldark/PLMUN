@@ -4,6 +4,7 @@ from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Length
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_wtf.csrf import CSRFProtect
 import sqlite3
 import os
 
@@ -17,6 +18,7 @@ app.config['SECRET_KEY'] = 'your_secret_key'  # Change this to a secure key
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+csrf = CSRFProtect(app)  # Initialize CSRF protection
 
 # Database connection function
 def get_db_connection():
@@ -81,25 +83,6 @@ def add_item():
         return redirect('/')
     return render_template('add.html')
 
-# API Endpoint to add an item
-@app.route('/api/items', methods=['POST'])
-@login_required
-def api_add_item():
-    data = request.get_json()  # Get JSON data from the request
-    name = data.get('name')     # Extract item name
-    quantity = data.get('quantity')  # Extract item quantity
-    price = data.get('price')    # Extract item price
-
-    # Connect to the database and insert the new item
-    conn = get_db_connection()
-    conn.execute('INSERT INTO items (name, quantity, price) VALUES (?, ?, ?)',
-                 (name, quantity, price))
-    conn.commit()
-    conn.close()
-
-    # Return a success message
-    return jsonify({'msg': 'Item added successfully'}), 201
-
 # Route to edit an item
 @app.route('/edit/<int:id>', methods=('GET', 'POST'))
 @login_required
@@ -120,37 +103,6 @@ def edit_item(id):
     conn.close()
     return render_template('edit.html', item=item)
 
-# Update Item API
-@app.route('/api/items/<int:item_id>', methods=['PUT'])
-def update_item(item_id):
-    data = request.get_json()
-    
-    name = data.get('name')
-    quantity = data.get('quantity')
-    price = data.get('price')
-
-    conn = get_db_connection()
-    item = conn.execute('SELECT * FROM items WHERE id = ?', (item_id,)).fetchone()
-
-    if item is None:
-        return jsonify({"msg": "Item not found"}), 404
-
-    conn.execute('UPDATE items SET name = ?, quantity = ?, price = ? WHERE id = ?',
-                 (name, quantity, price, item_id))
-    conn.commit()
-    conn.close()
-
-    return jsonify({"msg": "Item updated successfully"}), 200
-
-# API Endpoint to get inventory items
-@app.route('/api/items', methods=['GET'])
-@login_required
-def api_get_items():
-    conn = get_db_connection()
-    items = conn.execute('SELECT * FROM items').fetchall()
-    conn.close()
-    return jsonify([dict(item) for item in items])
-
 # Route to delete an item
 @app.route('/delete/<int:id>', methods=['POST'])
 @login_required
@@ -160,15 +112,6 @@ def delete_item(id):
     conn.commit()
     conn.close()
     return redirect('/')
-
-# API Delete an item
-@app.route('/api/items/<int:item_id>', methods=['DELETE'])
-def delete_item_api(item_id):
-    conn = get_db_connection()
-    conn.execute('DELETE FROM items WHERE id = ?', (item_id,))
-    conn.commit()
-    conn.close()
-    return {'msg': 'Item deleted successfully'}, 200  # Change to 200 OK
 
 # Registration route
 @app.route('/register', methods=['GET', 'POST'])
@@ -193,40 +136,23 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
-    if form.validate_on_submit():
-        username = form.username.data
-        password = form.password.data
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            username = form.username.data
+            password = form.password.data
 
-        conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
-        conn.close()
+            conn = get_db_connection()
+            user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+            conn.close()
 
-        if user and bcrypt.check_password_hash(user['password'], password):
-            login_user(User(user['id'], user['username'], user['role']))
-            flash('Login successful!')  # Flash message for successful login
-            return redirect(url_for('index'))  # Redirect to the homepage
-        else:
-            flash('Invalid username or password')  # Flash message for invalid login
-
+            if user and bcrypt.check_password_hash(user['password'], password):
+                login_user(User(user['id'], user['username'], user['role']))
+                return redirect('/')
+            else:
+                flash('Login Unsuccessful. Please check your username and password', 'danger')
+                app.logger.warning(f'Failed login attempt for username: {username}')
+    
     return render_template('login.html', form=form)
-
-# New API Login route
-@app.route('/api/login', methods=['POST'])
-def api_login():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-
-    conn = get_db_connection()
-    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
-    conn.close()
-
-    if user and bcrypt.check_password_hash(user['password'], password):
-        login_user(User(user['id'], user['username'], user['role']))
-        return jsonify({"msg": "Login successful"}), 200  # Successful login
-    else:
-        return jsonify({"msg": "Invalid username or password"}), 401  # Unauthorized
-
 
 # Logout route
 @app.route('/logout')
@@ -234,6 +160,60 @@ def api_login():
 def logout():
     logout_user()
     return redirect(url_for('index'))
+
+# API Endpoint to get inventory items
+@app.route('/api/items', methods=['GET'])
+@login_required
+def api_get_items():
+    conn = get_db_connection()
+    items = conn.execute('SELECT * FROM items').fetchall()
+    conn.close()
+    return jsonify([dict(item) for item in items])
+
+# API Endpoint to add an item
+@app.route('/api/items', methods=['POST'])
+@login_required
+def api_add_item():
+    data = request.get_json()
+    name = data.get('name')
+    quantity = data.get('quantity')
+    price = data.get('price')
+
+    conn = get_db_connection()
+    conn.execute('INSERT INTO items (name, quantity, price) VALUES (?, ?, ?)',
+                 (name, quantity, price))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'message': 'Item added successfully'}), 201
+
+# API Endpoint to update an item
+@app.route('/api/items/<int:id>', methods=['PUT'])
+@login_required
+def api_update_item(id):
+    data = request.get_json()
+    name = data.get('name')
+    quantity = data.get('quantity')
+    price = data.get('price')
+
+    conn = get_db_connection()
+    conn.execute('UPDATE items SET name = ?, quantity = ?, price = ? WHERE id = ?',
+                 (name, quantity, price, id))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'message': 'Item updated successfully'})
+
+# API Endpoint to delete an item
+@app.route('/api/items/<int:id>', methods=['DELETE'])
+@login_required
+def api_delete_item(id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM items WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'message': 'Item deleted successfully'})
 
 # Run the app
 if __name__ == "__main__":

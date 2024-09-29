@@ -161,14 +161,14 @@ def delete_item(id):
     conn.close()
     return redirect('/')
 
-# API Delete an item
 @app.route('/api/items/<int:item_id>', methods=['DELETE'])
-def delete_item_api(item_id):
+def delete_item(item_id):
     conn = get_db_connection()
     conn.execute('DELETE FROM items WHERE id = ?', (item_id,))
     conn.commit()
     conn.close()
-    return {'msg': 'Item deleted successfully'}, 200  # Change to 200 OK
+    return {'msg': 'Item deleted successfully'}, 204
+
 
 # Registration route
 @app.route('/register', methods=['GET', 'POST'])

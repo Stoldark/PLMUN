@@ -168,7 +168,8 @@ def delete_item_api(item_id):
     conn.execute('DELETE FROM items WHERE id = ?', (item_id,))
     conn.commit()
     conn.close()
-    return {'msg': 'Item deleted successfully'}, 200  # Change to 200 OK
+    return {'msg': 'Item deleted successfully'}, 204
+
 
 # Registration route
 @app.route('/register', methods=['GET', 'POST'])

@@ -1,0 +1,14 @@
+<h1>Inventory</h1>
+
+<ul>
+    {% for item in items %}
+        <li>{{ item['name'] }} - {{ item['quantity'] }} - {{ item['price'] }}
+            <a href="/edit/{{ item['id'] }}">Edit</a>
+            <form action="/delete/{{ item['id'] }}" method="POST">
+                <button type="submit">Delete</button>
+            </form>
+        </li>
+    {% endfor %}
+</ul>
+
+<a href="/add">Add New Item</a>

@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title>
+    <title>Login</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
-    <h1>Register</h1>
+    <div class="container mt-4">
+    <h1>Login</h1>
     <form method="post">
         {{ form.hidden_tag() }}
         <label for="username">Username:</label>
@@ -15,11 +17,8 @@
         <label for="password">Password:</label>
         {{ form.password(size=32) }}<br>
 
-        <label for="role">Role:</label>
-        {{ form.role(size=32) }}<br>
-
-        <button type="submit">Register</button>
+        <button type="submit">Login</button>
     </form>
-    <a href="{{ url_for('login') }}">Login</a>
+    <a href="{{ url_for('register') }}">Register</a>
 </body>
 </html>

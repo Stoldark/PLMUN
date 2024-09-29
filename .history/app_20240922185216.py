@@ -120,37 +120,6 @@ def edit_item(id):
     conn.close()
     return render_template('edit.html', item=item)
 
-# Update Item API
-@app.route('/api/items/<int:item_id>', methods=['PUT'])
-def update_item(item_id):
-    data = request.get_json()
-    
-    name = data.get('name')
-    quantity = data.get('quantity')
-    price = data.get('price')
-
-    conn = get_db_connection()
-    item = conn.execute('SELECT * FROM items WHERE id = ?', (item_id,)).fetchone()
-
-    if item is None:
-        return jsonify({"msg": "Item not found"}), 404
-
-    conn.execute('UPDATE items SET name = ?, quantity = ?, price = ? WHERE id = ?',
-                 (name, quantity, price, item_id))
-    conn.commit()
-    conn.close()
-
-    return jsonify({"msg": "Item updated successfully"}), 200
-
-# API Endpoint to get inventory items
-@app.route('/api/items', methods=['GET'])
-@login_required
-def api_get_items():
-    conn = get_db_connection()
-    items = conn.execute('SELECT * FROM items').fetchall()
-    conn.close()
-    return jsonify([dict(item) for item in items])
-
 # Route to delete an item
 @app.route('/delete/<int:id>', methods=['POST'])
 @login_required
@@ -160,15 +129,6 @@ def delete_item(id):
     conn.commit()
     conn.close()
     return redirect('/')
-
-# API Delete an item
-@app.route('/api/items/<int:item_id>', methods=['DELETE'])
-def delete_item_api(item_id):
-    conn = get_db_connection()
-    conn.execute('DELETE FROM items WHERE id = ?', (item_id,))
-    conn.commit()
-    conn.close()
-    return {'msg': 'Item deleted successfully'}, 200  # Change to 200 OK
 
 # Registration route
 @app.route('/register', methods=['GET', 'POST'])
